@@ -1,3 +1,0 @@
-CREATE DATABASE authdb;
-CREATE DATABASE taskdb;
-CREATE DATABASE auditdb;
