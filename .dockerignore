@@ -1,0 +1,12 @@
+.git
+.idea
+.mvn
+src
+tools
+compose.yaml
+README.md
+target/surefire-reports
+target/test-classes
+*.iml
+*.docx
+*.pdf
