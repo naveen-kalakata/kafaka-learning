@@ -86,6 +86,7 @@ public class AuthService {
 
     @Transactional
     public AuthTokenResponse login(LoginRequest request) {
+        log.info("Login request received for username={}", request.username());
         AppUser user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "Invalid username or password"));
 
@@ -93,11 +94,13 @@ public class AuthService {
             throw new ResponseStatusException(UNAUTHORIZED, "Invalid username or password");
         }
 
+        log.info("Login successful for userId={} username={}", user.getId(), user.getUsername());
         return createTokenResponse(user);
     }
 
     @Transactional
     public AuthTokenResponse refresh(RefreshRequest request) {
+        log.info("Refresh request received");
         RefreshToken storedToken = refreshTokenRepository.findByTokenAndRevokedFalse(request.refreshToken())
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "Refresh token is invalid"));
 
@@ -107,13 +110,18 @@ public class AuthService {
         }
 
         storedToken.setRevoked(true);
+        log.info("Refresh token accepted for userId={}", storedToken.getUser().getId());
         return createTokenResponse(storedToken.getUser());
     }
 
     @Transactional
     public void logout(LogoutRequest request) {
+        log.info("Logout request received");
         refreshTokenRepository.findByTokenAndRevokedFalse(request.refreshToken())
-                .ifPresent(token -> token.setRevoked(true));
+                .ifPresent(token -> {
+                    token.setRevoked(true);
+                    log.info("Refresh token revoked for userId={}", token.getUser().getId());
+                });
     }
 
     private AuthTokenResponse createTokenResponse(AppUser user) {
@@ -126,6 +134,8 @@ public class AuthService {
         refreshToken.setRevoked(false);
         refreshToken.setUser(user);
         refreshTokenRepository.save(refreshToken);
+        log.info("Issued token pair for userId={} username={} accessExpiresInMinutes={}",
+                user.getId(), user.getUsername(), jwtService.getExpirationMinutes());
 
         return new AuthTokenResponse(
                 accessToken,

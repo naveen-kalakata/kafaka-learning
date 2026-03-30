@@ -7,6 +7,8 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import java.util.List;
 
 @Service
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     private final SecretKeySpec secretKey;
     private final long expirationMinutes;
@@ -34,6 +38,7 @@ public class JwtService {
     public String generateToken(AppUser user) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(expirationMinutes, ChronoUnit.MINUTES);
+        log.info("Generating JWT for userId={} username={} expiresAt={}", user.getId(), user.getUsername(), expiresAt);
 
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject(user.getUsername())
@@ -51,6 +56,7 @@ public class JwtService {
             throw new IllegalStateException("Unable to generate JWT token", exception);
         }
 
+        log.info("JWT generated for userId={} username={}", user.getId(), user.getUsername());
         return signedJwt.serialize();
     }
 
