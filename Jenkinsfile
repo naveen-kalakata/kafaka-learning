@@ -55,5 +55,16 @@ pipeline {
                 bat 'docker push %IMAGE_URI%:latest'
             }
         }
+        stage('Deploy to ECS') {
+            steps {
+                withCredentials([
+                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    bat 'aws ecs update-service --cluster fortune-cluster --service kafka-learning-auth-service --force-new-deployment --region %AWS_REGION%'
+                }
+            }
+        }
+
     }
 }
