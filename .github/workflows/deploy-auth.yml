@@ -1,0 +1,54 @@
+name: Deploy Auth Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-2
+      AWS_ACCOUNT_ID: "856021348734"
+      ECR_REPOSITORY: kafka-learning-auth
+      IMAGE_URI: 856021348734.dkr.ecr.us-east-2.amazonaws.com/kafka-learning-auth
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run tests
+        run: ./mvnw test
+
+      - name: Build jar
+        run: ./mvnw clean package -DskipTests
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_URI:latest .
+
+      - name: Push Docker image
+        run: docker push $IMAGE_URI:latest
+
+      - name: Deploy to ECS
+        run: aws ecs update-service --cluster fortune-cluster --service kafka-learning-auth-service --force-new-deployment --region $AWS_REGION
